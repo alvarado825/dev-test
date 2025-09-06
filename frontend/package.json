@@ -1,6 +1,7 @@
 {
   "name": "appstack-react",
   "version": "3.1.0",
+  "type" : "module",
   "description": "AppStack - React Admin & Dashboard Template",
   "author": "Bootlab <support@bootlab.io>",
   "private": true,

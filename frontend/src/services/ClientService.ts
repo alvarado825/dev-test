@@ -10,6 +10,10 @@ class ClientService extends BaseService {
     return await this.get<Client[]>("");
   }
 
+  async getByDocument(documentNumber: string): Promise<Client[]> {
+    return await this.get<Client[]>(`?documentNumber=${documentNumber}`);
+  }
+
   async create(client: Client): Promise<string> {
     return await this.post<Client, string>("", client);
   }

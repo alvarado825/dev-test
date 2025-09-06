@@ -8,6 +8,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { mountRoute } from "@/utils/mountRoute";
 import Loader from "@/components/Loader";
 import ClientService from "@/services/ClientService";
+import { TextFormFieldType } from "@/components/form/TextFormField/TextFormFieldType";
+//import ClientEditForm from "./ClientEditForm"; 
+
+
 
 const ClientListing = () => {
     const navigate = useNavigate();
@@ -17,12 +21,14 @@ const ClientListing = () => {
         setDate(new Date());
     }, []);
 
+    
     return <>
         <Row style={{ justifyContent: "end", margin: "10px 0" }}>
             <Link to={NAVIGATION_PATH.CLIENTS.CREATE.ABSOLUTE}>
                 <Button style={{ maxWidth: "fit-content", float: "right" }}>Adicionar</Button>
             </Link>
         </Row>
+        
         <Card >
             <Card.Title></Card.Title>
             <Card.Header>
@@ -40,13 +46,31 @@ const ClientListing = () => {
                         { Header: "Email", accessor: "email" },
                         { Header: "Telefone", accessor: "phoneNumber" },
                         { Header: "Documento", accessor: "documentNumber" },
+                        { Header: "Data de Nascimento", accessor: "birthDate" },
                     ]}
                     query={async (filters) => {
+                        const documentFilter = filters.find(f => f.name === "documentNumber");
+                        const documentNumber = documentFilter?.value as string | undefined;
+
+                        if (documentNumber && documentNumber.trim() !== "") {
+                            const result = await ClientService.getByDocument(documentNumber);
+
+                            if (result) {
+                                return Array.isArray(result) ? result : [result];
+                            }
+
+                        }
                         return await ClientService.getAll();
                     }}
                     fetchButton
                     cleanButton
-                    filters={[]}
+                    filters={[{
+                        name: "documentNumber",
+                        label: "Documento",
+                        placeholder: "Buscar por documento",
+                        type: "text",
+                        componentType: TextFormFieldType.INPUT,
+                    }]}
                     queryName={["client", "listing", date]}
                 />
             </Suspense>

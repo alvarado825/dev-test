@@ -12,6 +12,10 @@ import { toastr } from "@/utils/toastr";
 import { errorHandling } from "@/utils/errorHandling";
 import { SpeedDial, SpeedDialAction } from "@mui/material";
 import { SlOptionsVertical } from "react-icons/sl";
+import ClientEditForm from "@/pages/clients/ClientEdit"; // Importe o novo componente
+import { Client } from "@/types/api/Client";
+
+
 
 export interface GlobalFilterType {
     name: string,
@@ -70,10 +74,22 @@ const IndeterminateCheckbox = React.forwardRef(
 export default function DataTable<T extends {}, TFilter extends BaseFilter>(props: DataTableProps<T, TFilter>) {
     const [searchParams, setSearchParams] = useSearchParams();
     const [globalFilters, setGlobalFilters] = useState<GlobalFilterType[]>(searchParams.size > 0 ? [...searchParams.entries()].filter(item => item[1]).map(([name, value]) => ({ name, value })) : []);
+    const [pendingFilters, setPendingFilters] = useState<GlobalFilterType[]>(globalFilters);
 
     const [exportLoading, setExportLoading] = useState<boolean>(false);
     const navigate = useNavigate();
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
+    const handleRowDoubleClick = (client: Client) => {
+    setSelectedClient(client);
+    setShowEditModal(true);
+    };
+
+    const handleEditSave = () => {
+  setShowEditModal(false);
+  refetch();
+};
     const queryAsync = useCallback(async (globalFilters: GlobalFilterType[], signal?: AbortSignal) => {
         let response = await props.query(globalFilters);
         return response;
@@ -94,16 +110,43 @@ export default function DataTable<T extends {}, TFilter extends BaseFilter>(prop
         else {
             filters.push({ name, value });
         }
+
         setGlobalFilters(filters);
+
         const urlSearchParams = filters
+        .filter(item => !!item.value)
+        .reduce((acc, curr) => {
+            acc[curr.name] = `${curr.value}`;
+            return acc;
+        }, {} as any);
+
+        setSearchParams(`?${new URLSearchParams(urlSearchParams)}`)
+        
+        
+    }
+
+    const handleChangePendingFilter = (name: string, value: unknown) => {
+    const filters = [...pendingFilters];
+    const index = filters.findIndex(f => f.name === name);
+    if (index > -1) {
+        filters[index].value = value;
+    } else {
+        filters.push({ name, value });
+    }
+    setPendingFilters(filters);
+    };
+
+    const handleFetch = () => {
+        setGlobalFilters(pendingFilters);
+        // Atualiza a URL se quiser
+        const urlSearchParams = pendingFilters
             .filter(item => !!item.value)
             .reduce((acc, curr) => {
                 acc[curr.name] = `${curr.value}`;
                 return acc;
             }, {} as any);
-
-        setSearchParams(`?${new URLSearchParams(urlSearchParams)}`)
-    }
+        setSearchParams(`?${new URLSearchParams(urlSearchParams)}`);
+    };
 
     const { isLoading, isRefetching, refetch, data } = useSuspenseQuery<T[]>({
         queryKey: queryKey,
@@ -191,13 +234,13 @@ export default function DataTable<T extends {}, TFilter extends BaseFilter>(prop
                                         <TextFormField
                                             {...filter}
                                             defaultValue={searchParams.get(filter.name.toString()) ?? filter.defaultValue}
-                                            value={globalFilters.find(f => f.name === filter.name)?.value as any ?? null}
+                                            value={pendingFilters.find(f => f.name === filter.name)?.value as any ?? null}
                                             handleChange={(event) => {
                                                 if (event.hasOwnProperty("target")) {
-                                                    handleChangeGlobalFilter(event.target.name, event.target.value)
+                                                    handleChangePendingFilter(event.target.name, event.target.value)
                                                 }
                                                 else {
-                                                    handleChangeGlobalFilter(event.name, event.value)
+                                                    handleChangePendingFilter(event.name, event.value)
                                                 }
                                             }}
                                         />
@@ -241,11 +284,12 @@ export default function DataTable<T extends {}, TFilter extends BaseFilter>(prop
                         }} disabled={exportLoading} >{exportLoading ? "Exportando..." : props.exportButtonText ?? "Exportar"} </Button>}
                         {props.cleanButton && <Button variant="secondary" onClick={() => {
                             setGlobalFilters([]);
+                            setPendingFilters([]);
                             setSearchParams("");
                             if (props.cleanFn)
                                 props.cleanFn();
                         }}>Limpar</Button>}
-                        {props.fetchButton && <Button className={"fetchButton"} variant={props.fetchButtonVariant} onClick={() => refetch()}>{props.fetchButtonName ?? "Buscar"}</Button>}
+                        {props.fetchButton && <Button className={"fetchButton"} variant={props.fetchButtonVariant} onClick={() => handleFetch()}>{props.fetchButtonName ?? "Buscar"}</Button>}
                         {props.reloadButton && <Button className={"reloadButton"} onClick={() => refetch()}>Atualizar {props.autoReloadTimerInSeconds ? `(${props.autoReloadTimerInSeconds}s)` : ""}</Button>}
                     </div>
                 )}
@@ -279,7 +323,7 @@ export default function DataTable<T extends {}, TFilter extends BaseFilter>(prop
                             ) : rows.map((row: RowType<any>, index: number) => {
                                 prepareRow(row);
                                 return (
-                                    <tr {...row.getRowProps()} key={index}>
+                                    <tr {...row.getRowProps()} key={index} onDoubleClick={() => handleRowDoubleClick(row.original)}>
                                         {row.cells.map((cell: Cell<object>, cellIndex) => {
                                             return (
                                                 <td {...cell.getCellProps()} key={cellIndex}>{cell.render("Cell")}</td>
@@ -290,6 +334,14 @@ export default function DataTable<T extends {}, TFilter extends BaseFilter>(prop
                             })}
                     </tbody>
                 </Table>
+                {showEditModal && selectedClient && (
+                <ClientEditForm
+                show={showEditModal}
+                onHide={() => setShowEditModal(false)}
+                client={selectedClient}
+                onSave={handleEditSave}
+                />
+            )}
             </Card>
             {props.rowSelectionProps
                 && props.rowSelectionProps.length > 0
@@ -297,7 +349,11 @@ export default function DataTable<T extends {}, TFilter extends BaseFilter>(prop
                 && selectedFlatRows.length > 0
                 && <SelectRowActions actions={props.rowSelectionProps} selectedIds={selectedFlatRows.map(row => (row.original as any))} />
             }
+            
+
+            
         </>
+        
     )
 }
 

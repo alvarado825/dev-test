@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Persistence;
 
@@ -11,9 +12,11 @@ using Persistence;
 namespace Persistence.Migrations
 {
     [DbContext(typeof(ClientControlContext))]
-    partial class ClientControlContextModelSnapshot : ModelSnapshot
+    [Migration("20250904203651_AddBirthDateToClient")]
+    partial class AddBirthDateToClient
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -106,7 +109,7 @@ namespace Persistence.Migrations
 
             modelBuilder.Entity("Domain.Client", b =>
                 {
-                    b.OwnsOne("Domain.Client.Address#Domain.Address", "Address", b1 =>
+                    b.OwnsOne("Domain.Address", "Address", b1 =>
                         {
                             b1.Property<Guid>("ClientId")
                                 .HasColumnType("char(36)");
@@ -140,7 +143,7 @@ namespace Persistence.Migrations
 
                             b1.HasKey("ClientId");
 
-                            b1.ToTable("Client", (string)null);
+                            b1.ToTable("Client");
 
                             b1.WithOwner()
                                 .HasForeignKey("ClientId");

@@ -8,6 +8,7 @@ import Loader from "@/components/Loader";
 import { toastr } from "@/utils/toastr";
 import ClientService from "@/services/ClientService";
 import { handlePhoneNumberChange } from "@/helpers/handlePhoneNumberChange";
+import {handleBirthDateChange} from "@/helpers/handleBirthDateChange";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { ReactQueryKeys } from "@/constants/ReactQueryKeys";
 import yup from "@/utils/yup";
@@ -21,6 +22,7 @@ const INITIAL_VALUES: Client = {
   phoneNumber: "",
   email: "",
   documentNumber: "",
+  birthDate: "",
   address: {
     postalCode: "",
     addressLine: "",
@@ -38,6 +40,7 @@ const schemaValidation = yup.object().shape({
   phoneNumber: yup.string().required("Telefone é obrigatório"),
   email: yup.string().email("Email inválido").required("Email é obrigatório"),
   documentNumber: yup.string().required("Documento é obrigatório"),
+  birthDate: yup.string().required("Data de nascimento é obrigatório").length(10,'Data de nascimento deve conter 8 dígitos'),
   address: yup.object().shape({
     postalCode: yup.string().required("CEP é obrigatório"),
     addressLine: yup.string().required("Endereço é obrigatório"),
@@ -64,8 +67,9 @@ const ClientForm = () => {
   async function onSubmit(values: Client) {
     try {
       const clientToSave: Client = {
-        ...values,
+        ...values,  
         phoneNumber: values.phoneNumber.replace(/\D/g, ''),
+        birthDate: values.birthDate.replace(/\D/g, ''),
         address: {
           ...values.address,
           postalCode: values.address.postalCode.replace(/\D/g, ''),
@@ -76,7 +80,11 @@ const ClientForm = () => {
       toastr({ title: "Cliente criado com sucesso", icon: "success" });
       navigate(NAVIGATION_PATH.CLIENTS.LISTING.ABSOLUTE);
     } catch (err: any) {
-      toastr({ title: "Erro", text: err.message, icon: "error" });
+      const apiError = err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err.message ||
+      "Erro desconhecido";
+      toastr({ title: "Erro", text: apiError, icon: "error" });
     }
   }
 
@@ -173,6 +181,19 @@ const ClientForm = () => {
                         handleChange={handleChange}
                         value={values.documentNumber}
                         formikError={errors.documentNumber}
+                      />
+                    </Col>
+                    <Col md={4}>
+                      <TextFormField
+                        componentType={TextFormFieldType.INPUT}
+                        name="birthDate"
+                        label="Data de Nascimento"
+                        required
+                        placeholder="dd/mm/aaaa"
+                        handleBlur={handleBlur}
+                        handleChange={(event) => handleBirthDateChange(event, handleChange)}
+                        value={values.birthDate}
+                        formikError={errors.birthDate}
                       />
                     </Col>
                   </Row>

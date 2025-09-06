@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Application.Client.Queries.ClientByDocumentNumberQuery;
+using Domain.Utils;
+using Application.Client.Commands.UpdateClient;
 
 namespace WebApi.Controllers
 {
@@ -31,11 +34,12 @@ namespace WebApi.Controllers
             return Ok(response);
         }
 
-        [HttpGet]
-        [ProducesResponseType(typeof(IEnumerable<AllClientsQueryResponse>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> ListAll()
+        [HttpPut("{documentNumber}")]
+        public async Task<IActionResult> UpdateClient([FromRoute] string documentNumber, [FromBody] UpdateClientCommandRequest request)
         {
-            var response = await _mediator.Send(new AllClientsQueryRequest());
+            request.Identificator = documentNumber;
+
+            var response = await _mediator.Send(request);
             return Ok(response);
         }
 
@@ -46,6 +50,22 @@ namespace WebApi.Controllers
             var response = await _mediator.Send(new ClientByIdQueryRequest { Id = id });
 
             return Ok(response);
+        }
+
+        [HttpGet]
+        [ProducesResponseType(typeof(ClientByDocumentNumberQueryResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IEnumerable<AllClientsQueryResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetClient([FromQuery] string documentNumber = null)
+        {
+
+            if (!string.IsNullOrEmpty(documentNumber))
+            {
+                var response = await _mediator.Send(new ClientByDocumentNumberQueryRequest { DocumentNumber = documentNumber });
+                return Ok(response);
+            }
+
+            var listResponse = await _mediator.Send(new AllClientsQueryRequest());
+            return Ok(listResponse);
         }
     }
 }

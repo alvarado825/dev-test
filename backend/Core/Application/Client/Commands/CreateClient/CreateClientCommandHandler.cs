@@ -1,5 +1,6 @@
 ﻿using Application.Common.Exceptions;
 using Application.Common.Interfaces;
+using Domain.Utils;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -19,12 +20,21 @@ namespace Application.Client.Commands.CreateClient
 
         public async Task<Guid> Handle(CreateClientCommandRequest request, CancellationToken cancellationToken)
         {
+            if (!CpfValidator.IsACpfValid(request.DocumentNumber))
+                throw new BadRequestException($"The number of the identificator {request.DocumentNumber} is invalid");
+
+            DateTime convertedBirthDate = Parsers.StringToDateTime(request.BirthDate);
+
+            if (convertedBirthDate == DateTime.MinValue)
+                throw new BadRequestException("BirthDate in an invalid format");
+
             var client = new Domain.Client(
                 request.FirstName,
                 request.LastName,
                 request.PhoneNumber,
                 request.Email,
-                request.DocumentNumber,
+                CpfValidator.FormatCpf(request.DocumentNumber),
+                Parsers.StringToDateTime(request.BirthDate),
                 new Domain.Address(
                     request.Address.PostalCode,
                     request.Address.AddressLine,

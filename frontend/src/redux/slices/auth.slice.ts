@@ -21,9 +21,13 @@ export const authSlice = createSlice({
     logout: (state) => {
       state.access_token = undefined;
       state.user = undefined;
+    },
+    setProfile: (state, action: PayloadAction<{ username: string, profile: UserProfile }>) => {
+    if (state.user) {
+      state.user = action.payload;
     }
   }
-});
+}});
 
-export const { login, logout } = authSlice.actions;
+export const { login, logout, setProfile } = authSlice.actions;
 export default authSlice.reducer;

@@ -13,7 +13,7 @@ export class BaseService {
     async get<T = any>(url: string, params?: any, signal?: AbortSignal): Promise<T> {
         const response = await this._axios.get<T>(`${this._controller}/${url}`, { params, signal });
         return response.data;
-    }
+    }    
 
     async getById<T = any>(url: string, signal?: AbortSignal): Promise<T> {
         return await this.get<T>(url, { signal });
